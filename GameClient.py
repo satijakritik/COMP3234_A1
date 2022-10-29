@@ -37,16 +37,18 @@ while auth == False:
     print(response.decode())
     
 while in_game_hall:
-    cmd = input("")
+    cmd = input("Enter: ")
     clientSocket.send(cmd.encode())
     
     response = clientSocket.recv(1024)
+    response_code = (response.decode()).split()[0]
     
     if response.decode() == "4001 Bye bye":
         in_game_hall = False
         clientSocket.close()
         exit(1)
     
+    print(response.decode())
 
     
     
