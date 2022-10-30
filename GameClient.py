@@ -41,12 +41,35 @@ while in_game_hall:
     clientSocket.send(cmd.encode())
     
     response = clientSocket.recv(1024)
-    response_code = (response.decode()).split()[0]
+    # response_code = (response.decode()).split()[0]
     
     if response.decode() == "4001 Bye bye":
         in_game_hall = False
         clientSocket.close()
         exit(1)
+        
+    if response.decode() == "3011 Wait":
+        
+        response = clientSocket.recv(1024)
+        # print(response.decode())
+        
+        while response.decode() != "3012 Game started. Please guess true or false":
+            response = clientSocket.recv(1024)
+            # pass
+        print(response.decode())
+        cmd = input("Enter: ")
+        clientSocket.send(cmd.encode())
+        
+        response = clientSocket.recv(1024)
+        # print(response.decode())
+    
+    if response.decode() == "3012 Game started. Please guess true or false":
+        print(response.decode())
+        cmd = input("Enter: ")
+        clientSocket.send(cmd.encode())
+        
+        response = clientSocket.recv(1024)
+        # print(response.decode())
     
     print(response.decode())
 
