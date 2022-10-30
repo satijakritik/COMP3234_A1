@@ -3,6 +3,7 @@
 import socket
 import threading
 import sys
+import random
 
 #-----Global variables----#
 STATES = {0: "OUT_OF_HOUSE", 1: "IN_THE_GAME_HALL", 2: "WAITING_IN_ROOM", 3: "PLAYING_A_GAME"}
@@ -14,6 +15,11 @@ file_path = sys.argv[2] #Parameter 2
 room_list = [0 for i in range(NUM_OF_ROOMS)]
 room_member_list = {1: {}, 2: {}, 3: {}, 4: {}, 5: {}}
 user_state = {}
+
+with open(file_path) as file:
+    user_data = [(line.rstrip()).split(":") for line in file]
+    
+print(user_data)
 
 #-------------------------
 
@@ -29,25 +35,24 @@ def thd_func(client):
     connectionSocket, addr = client    
     msg = connectionSocket.recv(1024)
     msg = msg.decode()
-    
-    user_state[client] = 0 #OUT_OF_HOUSE
-    # print(room_list)
-    
     cmd_args = msg.split()
     cmd = cmd_args[0] #/login
     user_name = cmd_args[1]
     password = cmd_args[2]
     
-    test = "/login kritik 11"
     success = "1001 Authentication successful"
     failure = "1002 Authentication failed"
     exit = "4001 Bye bye"
+    
+    user_state[client] = 0 #OUT_OF_HOUSE
+    # print(room_list)
+
     game_over = False
     
     # user_state[client] = 0
     cmd_list = CMD_LIST_FOR_STATE[0]
     
-    while msg != test:
+    while [user_name, password] not in user_data:
     
         # print(msg)
         if cmd not in cmd_list:
@@ -58,6 +63,10 @@ def thd_func(client):
         
         msg = connectionSocket.recv(1024)
         msg = msg.decode()
+        cmd_args = msg.split()
+        cmd = cmd_args[0] #/login
+        user_name = cmd_args[1]
+        password = cmd_args[2]
         
     connectionSocket.send(success.encode())
     
@@ -162,17 +171,43 @@ def thd_func(client):
                     cmd = cmd_args[0] #/guess
                 
                 if cmd == "/guess":
-                    move = bool(cmd_args[1])
+                    # move = bool(cmd_args[1].capitalize())
+                    move = cmd_args[1].capitalize()
                     room_member_list[arg][client] = move
                     # move_list = list(room_member_list[arg].values())
-                    # print(move_list)
+                    
                     while "" in list(room_member_list[arg].values()):
                         pass
                     
+                    player_list = list(room_member_list[arg].keys())
                     move_list = list(room_member_list[arg].values())
+                    print(move_list)
                 
                     if move_list[0] == move_list[1]:
                         msg = "3023 The result is a tie"
+                        connectionSocket.send(msg.encode())
+                        
+                        user_state[client] = 1
+                        room_member_list[arg].clear()
+                        room_list[arg - 1] = 0
+                        
+                        game_over = True
+                        
+                    if move_list[0] != move_list[1]:
+                        # r = str(bool(random.getrandbits(1)))
+                        
+                        print(r)
+                        
+                        index = 0
+                        
+                        while move_list[index] != r:
+                            index += 1
+                        
+                        if player_list[index] == client:
+                            msg = "3021 You are the winner"
+                        else:
+                            msg = "3022 You lost this game"
+                        
                         connectionSocket.send(msg.encode())
                         
                         user_state[client] = 1
@@ -200,7 +235,7 @@ serverSocket.listen(5)
 print("The server is ready to receive")
 
 while True:
-    
+    r = str(bool(random.getrandbits(1)))
     client = serverSocket.accept()
     newthd = threading.Thread(target=thd_func, args=(client,))
     newthd.start()
