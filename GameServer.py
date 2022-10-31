@@ -19,8 +19,13 @@ with open(file_path) as file:
     user_data = [(line.rstrip()).split(":") for line in file]
 
 def thd_func(client, lock):
-    connectionSocket, addr = client    
-    msg = connectionSocket.recv(1024)
+    connectionSocket, addr = client   
+    try: 
+        msg = connectionSocket.recv(1024)
+    except socket.error as err:
+        print("Recv error: ", err)
+        connectionSocket.close()
+    
     msg = msg.decode()
     cmd_args = msg.split()
     cmd = cmd_args[0] #/login
@@ -36,9 +41,18 @@ def thd_func(client, lock):
         
         if cmd not in cmd_list: 
             msg = "4002 Unrecognized message"
-            connectionSocket.send(msg.encode())
             
-            msg = connectionSocket.recv(1024)
+            try:
+                connectionSocket.send(msg.encode())
+            except socket.error as err:
+                print("Recv error: ", err)
+                connectionSocket.close()
+            
+            try:
+                msg = connectionSocket.recv(1024)
+            except socket.error as err:
+                print("Recv error: ", err)
+                connectionSocket.close()
             msg = msg.decode()
             cmd_args = msg.split()
             cmd = cmd_args[0] #/login
@@ -47,9 +61,19 @@ def thd_func(client, lock):
             continue
         
         msg = "1002 Authentication failed"
-        connectionSocket.send(msg.encode())
         
-        msg = connectionSocket.recv(1024)
+        try:
+            connectionSocket.send(msg.encode())
+        except socket.error as err:
+            print("Recv error: ", err)
+            connectionSocket.close()
+        
+        try:
+            msg = connectionSocket.recv(1024)
+        except socket.error as err:
+            print("Recv error: ", err)
+            connectionSocket.close()
+                
         msg = msg.decode()
         cmd_args = msg.split()
         cmd = cmd_args[0] #/login
@@ -57,13 +81,22 @@ def thd_func(client, lock):
         password = cmd_args[2]
     
     msg = "1001 Authentication successful"
-    connectionSocket.send(msg.encode())
+    try:
+        connectionSocket.send(msg.encode())
+    except socket.error as err:
+        print("Recv error: ", err)
+        connectionSocket.close()
     
     lock.acquire()
     user_state[client] = 1 #IN_THE_GAME_HALL
     lock.release()
     
-    msg = connectionSocket.recv(1024)
+    try:
+        msg = connectionSocket.recv(1024)
+    except socket.error as err:
+        print("Recv error: ", err)
+        connectionSocket.close()
+                
     msg = msg.decode()
     
     cmd_args = msg.split()
@@ -76,22 +109,42 @@ def thd_func(client, lock):
             
             if cmd not in cmd_list:
                 msg = "4002 Unrecognized message"
-                connectionSocket.send(msg.encode())
+                try:
+                    connectionSocket.send(msg.encode())
+                except socket.error as err:
+                    print("Recv error: ", err)
+                    connectionSocket.close()
                 
             if cmd == "/list":
                 room_list_str = [str(x) for x in room_list]
                 room_list_str = " ".join(room_list_str)
                 msg = f"3001 {str(NUM_OF_ROOMS)} {room_list_str}"
-                connectionSocket.send(msg.encode())
+                
+                try:
+                    connectionSocket.send(msg.encode())
+                except socket.error as err:
+                    print("Recv error: ", err)
+                    connectionSocket.close()
                 
             if cmd == "/enter":
                 arg = int(cmd_args[1])
                 if room_list[arg - 1] == 2:
                     msg = "3013 The room is full"
-                    connectionSocket.send(msg.encode())
+                    
+                    try:
+                        connectionSocket.send(msg.encode())
+                    except socket.error as err:
+                        print("Recv error: ", err)
+                        connectionSocket.close()
+                        
                 if room_list[arg - 1] == 1:
                     msg = "3012 Game started. Please guess true or false"
-                    connectionSocket.send(msg.encode())
+                    
+                    try:
+                        connectionSocket.send(msg.encode())
+                    except socket.error as err:
+                        print("Recv error: ", err)
+                        connectionSocket.close()
                     
                     lock.acquire()
                     room_list[arg - 1] += 1
@@ -109,7 +162,12 @@ def thd_func(client, lock):
                     
                 if room_list[arg - 1] == 0:
                     msg = "3011 Wait"
-                    connectionSocket.send(msg.encode())
+                    
+                    try:
+                        connectionSocket.send(msg.encode())
+                    except socket.error as err:
+                        print("Recv error: ", err)
+                        connectionSocket.close()
                     
                     lock.acquire()
                     room_list[arg - 1] += 1
@@ -129,7 +187,12 @@ def thd_func(client, lock):
                         pass
                     
                     msg = "3012 Game started. Please guess true or false"
-                    connectionSocket.send(msg.encode())
+                    
+                    try:
+                        connectionSocket.send(msg.encode())
+                    except socket.error as err:
+                        print("Recv error: ", err)
+                        connectionSocket.close()
             
                     lock.acquire()
                     user_state[client] = 3
@@ -144,14 +207,22 @@ def thd_func(client, lock):
             
             while game_over == False:
                 
-                msg = connectionSocket.recv(1024)
+                try:
+                    msg = connectionSocket.recv(1024)
+                except socket.error as err:
+                    print("Recv error: ", err)
+                    connectionSocket.close()
                 msg = msg.decode()
                 cmd_args = msg.split()
                 cmd = cmd_args[0] #/guess
                 
                 if cmd not in cmd_list:
                     msg = "4002 Unrecognized message"
-                    connectionSocket.send(msg.encode())
+                    try:
+                        connectionSocket.send(msg.encode())
+                    except socket.error as err:
+                        print("Recv error: ", err)
+                        connectionSocket.close()
                 
                 if cmd == "/guess":
                     move = cmd_args[1].capitalize()
@@ -166,9 +237,16 @@ def thd_func(client, lock):
                     player_list = list(room_member_list[arg].keys())
                     move_list = list(room_member_list[arg].values())
                 
+                    # print(player_list)
+                    # print(move_list)
+                    
                     if move_list[0] == move_list[1]:
                         msg = "3023 The result is a tie"
-                        connectionSocket.send(msg.encode())
+                        try:
+                            connectionSocket.send(msg.encode())
+                        except socket.error as err:
+                            print("Recv error: ", err)
+                            connectionSocket.close()
                         
                         lock.acquire()
                         user_state[client] = 1
@@ -196,7 +274,11 @@ def thd_func(client, lock):
                         else:
                             msg = "3022 You lost this game"
                         
-                        connectionSocket.send(msg.encode())
+                        try:
+                            connectionSocket.send(msg.encode())
+                        except socket.error as err:
+                            print("Recv error: ", err)
+                            connectionSocket.close()
                         
                         lock.acquire()
                         user_state[client] = 1
@@ -212,21 +294,30 @@ def thd_func(client, lock):
                         
                         game_over = True
         
-        msg = connectionSocket.recv(1024)
+        try:
+            msg = connectionSocket.recv(1024)
+        except socket.error as err:
+            print("Recv error: ", err)
+            connectionSocket.close()
         msg = msg.decode()
         
         cmd_args = msg.split()
         cmd = cmd_args[0] 
     
     msg = "4001 Bye bye"
-    connectionSocket.send(msg.encode())
+    
+    try:
+        connectionSocket.send(msg.encode())
+    except socket.error as err:
+        print("Recv error: ", err)
+        connectionSocket.close()
     
     connectionSocket.close()
 
 serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serverSocket.bind( ("", server_port) )
 serverSocket.listen(5)
-print("The server is ready to receive")
+print("The server is ready")
 
 while True:
     r = str(bool(random.getrandbits(1)))
